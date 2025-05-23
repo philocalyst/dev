@@ -298,28 +298,35 @@ impl DevDocsManager {
 
         drop(cache);
 
+        use std::cell::RefCell;
+        use thread_local::ThreadLocal;
         // Perform fuzzy search
-        let mut nucleo = Matcher::new(Config::DEFAULT);
+        let matcher = Matcher::new(Config::DEFAULT);
+        let tls: ThreadLocal<RefCell<Matcher>> = ThreadLocal::new();
 
         let mut pattern_buf: Vec<char> = Vec::new();
 
-        let mut entry_buf: Vec<char> = Vec::new();
-
-        let mut results: Vec<_> = vec![];
         let pattern = Utf32Str::new(query, &mut pattern_buf);
 
+        use rayon::prelude::*;
         // Pattern match
-        for (idx, entry) in entries.into_iter().enumerate() {
-            // clear old buf
-            entry_buf.clear();
+        let mut results: Vec<SearchResult> = entries
+            .into_par_iter()
+            .map(|entry| {
+                // each thread/thread-pool task gets its own buffer
+                let mut entry_buf = Vec::new();
 
-            let text = format!("{} {}", entry.entry.name, entry.entry.entry_type);
-            let full = Utf32Str::new(text.as_str(), &mut entry_buf);
+                let cell = tls.get_or(|| RefCell::new(matcher.clone()));
+                let mut matcher = cell.borrow_mut();
 
-            let score = nucleo.fuzzy_match(full, pattern).unwrap_or(0);
+                let text = format!("{} {}", entry.entry.name, entry.entry.entry_type);
+                let full = Utf32Str::new(text.as_str(), &mut entry_buf);
 
-            results.push(SearchResult { entry, score });
-        }
+                let score = matcher.fuzzy_match(full, pattern).unwrap_or(0);
+
+                SearchResult { entry, score }
+            })
+            .collect();
 
         // Sort by score (higher is better)
         results.sort_by(|a, b| {
