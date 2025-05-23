@@ -296,8 +296,6 @@ impl DevDocsManager {
             }
         }
 
-        info!("hii");
-
         drop(cache);
 
         // Perform fuzzy search
@@ -318,7 +316,7 @@ impl DevDocsManager {
             let text = format!("{} {}", entry.entry.name, entry.entry.entry_type);
             let full = Utf32Str::new(text.as_str(), &mut entry_buf);
 
-            let score = nucleo.fuzzy_match(pattern, full).unwrap_or(0);
+            let score = nucleo.fuzzy_match(full, pattern).unwrap_or(0);
 
             results.push(SearchResult { entry, score });
         }
@@ -330,7 +328,7 @@ impl DevDocsManager {
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        Ok(results)
+        Ok(results.into_iter().take(limit).collect())
     }
 
     /// Get the content of a specific documentation page
@@ -493,7 +491,7 @@ mod tests {
         let manager = DevDocsManager::new().unwrap();
 
         manager.add_doc("rust").await.unwrap();
-        let result = manager.search("yeetttttttttttttttt", None).await.unwrap();
+        let result = manager.search("yeet", None).await.unwrap();
 
         println!("{result:?}");
         assert!(manager.data_dir.to_string_lossy().contains("devdocs"));
