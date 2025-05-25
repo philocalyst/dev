@@ -164,6 +164,19 @@ impl DevDocsManager {
         self.refresh_available_docs().await
     }
 
+    async fn split_into_html(&self, slug: &str) -> Result<()> {
+        let total_content = self.download_doc_content(slug).await?;
+
+        total_content.into_iter().for_each(|(name, contents)| {
+            let key = self.data_dir.join(name);
+            let parent_dir = key.parent().unwrap();
+            std::fs::create_dir_all(parent_dir).unwrap();
+            std::fs::write(key.with_extension("html"), contents).unwrap();
+        });
+
+        Ok(())
+    }
+
     /// Add a new documentation
     pub async fn add_doc(&self, slug: &str) -> Result<()> {
         if self.is_doc_installed(slug).await? {
@@ -181,6 +194,8 @@ impl DevDocsManager {
 
         // Download index and content concurrently
         let index = self.download_doc_index(&doc.slug).await?;
+
+        self.split_into_html(&doc.slug).await?;
 
         let cached_doc = CachedDoc {
             doc,
@@ -334,19 +349,19 @@ impl DevDocsManager {
         Ok(results.into_iter().take(limit).collect())
     }
 
-    /// Get the content of a specific documentation page
-    pub async fn get_page_content(&self, slug: &str, path: &str) -> Result<String> {
-        let cache = self.cache.read().await;
-        let cached_doc = cache
-            .get(slug)
-            .ok_or_else(|| DevDocsError::DocNotFound(slug.to_string()))?;
+    // /// Get the content of a specific documentation page
+    // pub async fn get_page_content(&self, slug: &str, path: &str) -> Result<String> {
+    //     let cache = self.cache.read().await;
+    //     let cached_doc = cache
+    //         .get(slug)
+    //         .ok_or_else(|| DevDocsError::DocNotFound(slug.to_string()))?;
 
-        cached_doc
-            .content
-            .get(path)
-            .cloned()
-            .ok_or_else(|| DevDocsError::DocNotFound(format!("{}#{}", slug, path)).into())
-    }
+    //     cached_doc
+    //         .content
+    //         .get(path)
+    //         .cloned()
+    //         .ok_or_else(|| DevDocsError::DocNotFound(format!("{}#{}", slug, path)).into())
+    // }
 
     /// Update a specific documentation
     pub async fn update_doc(&self, slug: &str) -> Result<()> {
@@ -388,12 +403,8 @@ impl DevDocsManager {
         Ok(index)
     }
 
-    async fn download_doc_content(
-        &self,
-        slug: &str,
-        mtime: u64,
-    ) -> Result<HashMap<String, String>> {
-        let url = format!("{}/{}/db.json?{}", DOCUMENTS_BASE_URL, slug, mtime);
+    async fn download_doc_content(&self, slug: &str) -> Result<HashMap<String, String>> {
+        let url = format!("{}/{}/db.json", DOCUMENTS_BASE_URL, slug);
         debug!("Downloading content: {}", url);
 
         let response = self.client.get(&url).send().await?;
@@ -403,9 +414,6 @@ impl DevDocsManager {
     }
 
     async fn save_doc_cache(&self, slug: &str, cached_doc: &CachedDoc) -> Result<()> {
-        let path = self.data_dir.join(format!("{}.json", slug));
-        let json = serde_json::to_string_pretty(cached_doc)?;
-        fs::write(path, json).await?;
         use bitcode;
         let path = self.data_dir.join(format!("{}.bin", slug));
         let data = bitcode::serialize(&cached_doc.index)?;
