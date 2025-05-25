@@ -168,7 +168,7 @@ impl DevDocsManager {
         let total_content = self.download_doc_content(slug).await?;
 
         total_content.into_iter().for_each(|(name, contents)| {
-            let key = self.data_dir.join(name);
+            let key = self.data_dir.join(slug).join(name);
             let parent_dir = key.parent().unwrap();
             std::fs::create_dir_all(parent_dir).unwrap();
             std::fs::write(add_html_ext(key), ensure_html_extensions(&contents)).unwrap();
