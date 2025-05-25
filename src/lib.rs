@@ -171,7 +171,7 @@ impl DevDocsManager {
             let key = self.data_dir.join(name);
             let parent_dir = key.parent().unwrap();
             std::fs::create_dir_all(parent_dir).unwrap();
-            std::fs::write(add_html_ext(key), contents).unwrap();
+            std::fs::write(add_html_ext(key), ensure_html_extensions(&contents)).unwrap();
         });
 
         Ok(())
@@ -496,6 +496,36 @@ fn add_html_ext(mut path: PathBuf) -> PathBuf {
         path.set_extension("html");
     }
     path
+}
+
+use regex::{Captures, Regex};
+fn ensure_html_extensions(html: &str) -> String {
+    // match href="..."; group 1 is the URL
+    let re = Regex::new(r#"href="([^"]+)""#).unwrap();
+
+    re.replace_all(html, |caps: &Captures| {
+        let url = &caps[1];
+
+        // leave absolute URLs alone
+        if url.starts_with("http://") || url.starts_with("https://") {
+            format!(r#"href="{}""#, url)
+        } else {
+            // split off a fragment if any
+            let (path, fragment) = match url.split_once('#') {
+                Some((p, f)) => (p, format!("#{}", f)),
+                None => (url, String::new()),
+            };
+            // only add `.html` if it's not already there
+            let path = if path.ends_with(".html") {
+                path.to_string()
+            } else {
+                format!("{}.html", path)
+            };
+            // reassemble
+            format!(r#"href="{}{}""#, path, fragment)
+        }
+    })
+    .into_owned()
 }
 
 // Re-exports for convenience
