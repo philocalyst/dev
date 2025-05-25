@@ -20,6 +20,8 @@ thread_local = "1.1.8"
 bitcode = { version = "0.6.6", features = ["serde"] }
 regex = "1.11.1"
 html2md = { git = "https://github.com/philocalyst/html2md", version = "0.2.15" }
+clap = { version = "4.5.38", features = ["derive"] }
+webbrowser = "1.0.4"
 
 [dev-dependencies]
 tokio-test = "0.4"
