@@ -37,6 +37,11 @@ pub enum DevDocsError {
     InvalidSlug(String),
 }
 
+enum OutputType {
+    Markdown,
+    Html,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Doc {
     pub name: String,
@@ -164,16 +169,32 @@ impl DevDocsManager {
         self.refresh_available_docs().await
     }
 
-    async fn split_into_html(
+    async fn split_into(
         &self,
         slug: &str,
+        output_type: &OutputType,
         total_content: HashMap<String, String>,
     ) -> Result<()> {
         total_content.into_iter().for_each(|(name, contents)| {
             let key = self.data_dir.join(slug).join(name);
             let parent_dir = key.parent().unwrap();
             std::fs::create_dir_all(parent_dir).unwrap();
-            std::fs::write(add_ext(key, "html"), ensure_extensions(&contents, ".html")).unwrap();
+
+            use html2md;
+            match output_type {
+                OutputType::Markdown => {
+                    let contents = ensure_extensions(&contents, "md");
+
+                    let contents = html2md::parse_html(&contents);
+
+                    std::fs::write(add_ext(key, "md"), contents).unwrap();
+                }
+
+                OutputType::Html => {
+                    std::fs::write(add_ext(key, "html"), ensure_extensions(&contents, "html"))
+                        .unwrap();
+                }
+            }
         });
 
         Ok(())
@@ -199,7 +220,8 @@ impl DevDocsManager {
         let index = self.download_doc_index(&doc.slug).await?;
 
         let content = self.download_doc_content(slug).await?;
-        self.split_into_html(&doc.slug, content).await?;
+        self.split_into(&doc.slug, &OutputType::Markdown, content)
+            .await?;
 
         let cached_doc = CachedDoc {
             doc,
