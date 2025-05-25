@@ -229,7 +229,7 @@ impl DevDocsManager {
         drop(cache);
 
         // Remove from disk
-        let doc_path = self.data_dir.join(format!("{}.json", slug));
+        let doc_path = self.data_dir.join(format!("{}.bin", slug));
         if doc_path.exists() {
             fs::remove_file(doc_path).await?;
         }
