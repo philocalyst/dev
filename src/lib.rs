@@ -551,7 +551,7 @@ fn ensure_extensions(html: &str, ext: &str) -> String {
             let path = if path.ends_with(&dotted_ext) {
                 path.to_string()
             } else {
-                format!("{}.html", path)
+                format!("{}.{}", path, ext)
             };
             // reassemble
             format!(r#"href="{}{}""#, path, fragment)
