@@ -164,14 +164,16 @@ impl DevDocsManager {
         self.refresh_available_docs().await
     }
 
-    async fn split_into_html(&self, slug: &str) -> Result<()> {
-        let total_content = self.download_doc_content(slug).await?;
-
+    async fn split_into_html(
+        &self,
+        slug: &str,
+        total_content: HashMap<String, String>,
+    ) -> Result<()> {
         total_content.into_iter().for_each(|(name, contents)| {
             let key = self.data_dir.join(slug).join(name);
             let parent_dir = key.parent().unwrap();
             std::fs::create_dir_all(parent_dir).unwrap();
-            std::fs::write(add_html_ext(key), ensure_html_extensions(&contents)).unwrap();
+            std::fs::write(add_ext(key, "html"), ensure_extensions(&contents, ".html")).unwrap();
         });
 
         Ok(())
@@ -196,7 +198,8 @@ impl DevDocsManager {
         // Download index and content concurrently
         let index = self.download_doc_index(&doc.slug).await?;
 
-        self.split_into_html(&doc.slug).await?;
+        let content = self.download_doc_content(slug).await?;
+        self.split_into_html(&doc.slug, content).await?;
 
         let cached_doc = CachedDoc {
             doc,
@@ -489,23 +492,26 @@ fn current_timestamp() -> u64 {
         .as_secs()
 }
 
-fn add_html_ext(mut path: PathBuf) -> PathBuf {
-    if let Some(ext) = path.extension() {
+fn add_ext(mut path: PathBuf, ext: &str) -> PathBuf {
+    if let Some(cur_ext) = path.extension() {
         // If we find an extension, like in the sub-trait thing, extend it with html
-        let mut new_ext = ext.to_os_string();
-        new_ext.push(".html");
+        let mut new_ext = cur_ext.to_os_string();
+        let dotted_ext = format!(".{}", ext);
+        new_ext.push(dotted_ext);
         path.set_extension(new_ext);
     } else {
         // no extension, just html
-        path.set_extension("html");
+        path.set_extension(ext);
     }
     path
 }
 
 use regex::{Captures, Regex};
-fn ensure_html_extensions(html: &str) -> String {
+fn ensure_extensions(html: &str, ext: &str) -> String {
     // match href="..."; group 1 is the URL
     let re = Regex::new(r#"href="([^"]+)""#).unwrap();
+
+    let dotted_ext = format!(".{}", ext);
 
     re.replace_all(html, |caps: &Captures| {
         let url = &caps[1];
@@ -520,7 +526,7 @@ fn ensure_html_extensions(html: &str) -> String {
                 None => (url, String::new()),
             };
             // only add `.html` if it's not already there
-            let path = if path.ends_with(".html") {
+            let path = if path.ends_with(&dotted_ext) {
                 path.to_string()
             } else {
                 format!("{}.html", path)
