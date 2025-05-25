@@ -91,10 +91,9 @@ pub struct SearchResult {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct CachedDoc {
+pub struct CachedDoc {
     doc: Doc,
     index: DocIndex,
-    content: HashMap<String, String>,
     cached_at: u64,
 }
 
@@ -181,15 +180,11 @@ impl DevDocsManager {
         info!("Adding documentation: {} ({})", doc.name, doc.slug);
 
         // Download index and content concurrently
-        let (index, content) = tokio::try_join!(
-            self.download_doc_index(&doc.slug),
-            self.download_doc_content(&doc.slug, doc.mtime)
-        )?;
+        let index = self.download_doc_index(&doc.slug).await?;
 
         let cached_doc = CachedDoc {
             doc,
             index,
-            content,
             cached_at: current_timestamp(),
         };
 
