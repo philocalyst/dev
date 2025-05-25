@@ -1,5 +1,5 @@
 [package]
-name = "church"
+name = "dev"
 version = "0.1.0"
 edition = "2024"
 
@@ -17,6 +17,7 @@ futures = "0.3"
 env_logger = "0.11.8"
 rayon = "1.10.0"
 thread_local = "1.1.8"
+bitcode = { version = "0.6.6", features = ["serde"] }
 
 [dev-dependencies]
 tokio-test = "0.4"
