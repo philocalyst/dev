@@ -428,7 +428,7 @@ impl DevDocsManager {
 
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
-            if path.extension().and_then(|s| s.to_str()) == Some("json") {
+            if path.extension().and_then(|s| s.to_str()) == Some("bin") {
                 if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
                     if stem == "available_docs" {
                         continue; // Skip available docs cache
