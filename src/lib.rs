@@ -180,7 +180,8 @@ impl DevDocsManager {
     /// Add a new documentation
     pub async fn add_doc(&self, slug: &str) -> Result<()> {
         if self.is_doc_installed(slug).await? {
-            warn!("Doc is already installed, skipping.")
+            warn!("Doc is already installed, skipping.");
+            return Ok(());
         }
 
         let available_docs = self.get_available_docs().await?;
