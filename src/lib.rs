@@ -290,6 +290,7 @@ impl DevDocsManager {
     /// Search through installed documentation with fuzzy matching
     pub async fn search(&self, query: &str, limit: Option<usize>) -> Result<Vec<SearchResult>> {
         let cache = self.cache.read().await;
+
         let limit = limit.unwrap_or(50);
 
         if cache.is_empty() {
@@ -417,7 +418,7 @@ impl DevDocsManager {
     async fn save_doc_cache(&self, slug: &str, cached_doc: &CachedDoc) -> Result<()> {
         use bitcode;
         let path = self.data_dir.join(format!("{}.bin", slug));
-        let data = bitcode::serialize(&cached_doc.index)?;
+        let data = bitcode::serialize::<CachedDoc>(&cached_doc)?;
         fs::write(path, data).await?;
         Ok(())
     }
