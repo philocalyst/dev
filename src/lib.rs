@@ -65,7 +65,7 @@ pub struct DocIndex {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Entry {
     pub name: String,
-    pub path: String,
+    pub path: PathBuf,
     #[serde(rename = "type")]
     pub entry_type: String,
 }
