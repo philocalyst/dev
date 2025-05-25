@@ -19,7 +19,7 @@ rayon = "1.10.0"
 thread_local = "1.1.8"
 bitcode = { version = "0.6.6", features = ["serde"] }
 regex = "1.11.1"
-html2md = "0.2.15"
+html2md = { git = "https://github.com/philocalyst/html2md", version = "0.2.15" }
 
 [dev-dependencies]
 tokio-test = "0.4"
