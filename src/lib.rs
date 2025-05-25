@@ -171,7 +171,7 @@ impl DevDocsManager {
             let key = self.data_dir.join(name);
             let parent_dir = key.parent().unwrap();
             std::fs::create_dir_all(parent_dir).unwrap();
-            std::fs::write(key.with_extension("html"), contents).unwrap();
+            std::fs::write(add_html_ext(key), contents).unwrap();
         });
 
         Ok(())
@@ -483,6 +483,19 @@ fn current_timestamp() -> u64 {
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
         .as_secs()
+}
+
+fn add_html_ext(mut path: PathBuf) -> PathBuf {
+    if let Some(ext) = path.extension() {
+        // If we find an extension, like in the sub-trait thing, extend it with html
+        let mut new_ext = ext.to_os_string();
+        new_ext.push(".html");
+        path.set_extension(new_ext);
+    } else {
+        // no extension, just html
+        path.set_extension("html");
+    }
+    path
 }
 
 // Re-exports for convenience
