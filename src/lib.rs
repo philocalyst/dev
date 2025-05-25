@@ -2,6 +2,7 @@
 //!
 //! A library for managing DevDocs documentation locally with fuzzy search capabilities.
 
+use bitcode;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -410,6 +411,10 @@ impl DevDocsManager {
         let path = self.data_dir.join(format!("{}.json", slug));
         let json = serde_json::to_string_pretty(cached_doc)?;
         fs::write(path, json).await?;
+        use bitcode;
+        let path = self.data_dir.join(format!("{}.bin", slug));
+        let data = bitcode::serialize(&cached_doc.index)?;
+        fs::write(path, data).await?;
         Ok(())
     }
 
@@ -425,8 +430,8 @@ impl DevDocsManager {
                         continue; // Skip available docs cache
                     }
 
-                    match fs::read_to_string(&path).await {
-                        Ok(content) => match serde_json::from_str::<CachedDoc>(&content) {
+                    match fs::read(&path).await {
+                        Ok(content) => match bitcode::deserialize::<CachedDoc>(&content) {
                             Ok(cached_doc) => {
                                 cache.insert(stem.to_string(), cached_doc);
                             }
