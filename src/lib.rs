@@ -314,7 +314,9 @@ impl DevDocsManager {
         use std::cell::RefCell;
         use thread_local::ThreadLocal;
         // Perform fuzzy search
-        let matcher = Matcher::new(Config::DEFAULT);
+        let mut matcher_config = Config::DEFAULT;
+        matcher_config.prefer_prefix = true;
+        let matcher = Matcher::new(matcher_config);
         let tls: ThreadLocal<RefCell<Matcher>> = ThreadLocal::new();
 
         let mut pattern_buf: Vec<char> = Vec::new();
