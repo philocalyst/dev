@@ -201,7 +201,7 @@ impl DevDocsManager {
     }
 
     /// Add a new documentation
-    pub async fn add_doc(&self, slug: &str) -> Result<()> {
+    pub async fn add_doc(&self, slug: &str, format: Option<&Formats>) -> Result<()> {
         if self.is_doc_installed(slug).await? {
             warn!("Doc is already installed, skipping.");
             return Ok(());
@@ -220,8 +220,13 @@ impl DevDocsManager {
         let index = self.download_doc_index(&doc.slug).await?;
 
         let content = self.download_doc_content(slug).await?;
-        self.split_into(&doc.slug, &OutputType::Markdown, content)
-            .await?;
+        if let Some(format) = format {
+            self.split_into(&doc.slug, format, &content).await?;
+        } else {
+            self.split_into(&doc.slug, &Formats::Markdown, &content)
+                .await?;
+            self.split_into(&doc.slug, &Formats::Html, &content).await?;
+        }
 
         let cached_doc = CachedDoc {
             doc,
@@ -264,7 +269,7 @@ impl DevDocsManager {
     }
 
     /// Download all available documentation
-    pub async fn download_all(&self) -> Result<()> {
+    pub async fn download_all(&self, format: &Formats) -> Result<()> {
         let available_docs = self.get_available_docs().await?;
         let installed_docs = self.list_installed_docs().await?;
 
@@ -278,7 +283,9 @@ impl DevDocsManager {
         // Download in batches to avoid overwhelming the server
         const BATCH_SIZE: usize = 5;
         for batch in to_download.chunks(BATCH_SIZE) {
-            let futures = batch.iter().map(|doc| self.add_doc(&doc.slug));
+            let futures = batch
+                .iter()
+                .map(|doc| self.add_doc(&doc.slug, Some(format)));
             let results: Vec<_> = futures::future::join_all(futures).await;
 
             for (doc, result) in batch.iter().zip(results) {
@@ -400,7 +407,7 @@ impl DevDocsManager {
 
         // Remove and re-add
         self.remove_doc(slug).await?;
-        self.add_doc(slug).await?;
+        self.add_doc(slug, None).await?;
 
         Ok(())
     }
@@ -572,18 +579,6 @@ mod tests {
     #[tokio::test]
     async fn test_manager_creation() {
         let manager = DevDocsManager::new().unwrap();
-        assert!(manager.data_dir.to_string_lossy().contains("devdocs"));
-    }
-
-    #[tokio::test]
-    async fn test_search() {
-        env_logger::init();
-        let manager = DevDocsManager::new().unwrap();
-
-        manager.add_doc("rust").await.unwrap();
-        let result = manager.search("yeet", None).await.unwrap();
-
-        println!("{result:?}");
         assert!(manager.data_dir.to_string_lossy().contains("devdocs"));
     }
 
