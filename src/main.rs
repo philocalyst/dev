@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use dev::DevDocsManager;
+use dev::{DevDocsManager, Formats};
 use dirs;
 use tokio::fs;
 use webbrowser;
@@ -54,7 +54,7 @@ enum Commands {
         limit: Option<usize>,
         /// Show absolute paths instead of relative
         #[clap(long)]
-        absolute: bool,
+        full: bool,
     },
 
     /// Update docs by slug, or use "all" to update everything
@@ -130,15 +130,14 @@ async fn main() -> Result<()> {
             }
         }
 
-        Commands::Search {
-            query,
-            limit,
-            absolute,
-        } => {
+        Commands::Search { query, limit, full } => {
             let results = mgr.search(&query, limit).await?;
             for r in results {
-                let rel = PathBuf::from(&r.entry.doc_slug).join(&r.entry.entry.path);
-                let display_path = if absolute { data_dir.join(&rel) } else { rel };
+                let rel_full = PathBuf::from(&r.entry.doc_slug).join(&r.entry.entry.path);
+
+                let rel = rel_full.parent().unwrap().into();
+
+                let display_path = if full { rel_full } else { rel };
                 println!("{}\t{}", display_path.display(), r.entry.entry.name);
             }
         }
