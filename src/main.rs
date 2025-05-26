@@ -91,12 +91,12 @@ async fn main() -> Result<()> {
             for slug in slugs {
                 if !mgr.is_doc_installed(&slug).await? {
                     // install the binary cache + markdown
-                    mgr.add_doc(&slug).await?;
                     println!("✅ installed `{}` (markdown)", slug);
 
                     if do_html {
-                        // TODO: expose an API in the library to generate HTML
-                        eprintln!("⚠ html‐only install isn’t yet supported by the library");
+                        mgr.add_doc(&slug, Some(&Formats::Html)).await?;
+                    } else {
+                        mgr.add_doc(&slug, Some(&Formats::Markdown)).await?;
                     }
                 } else {
                     println!("⚠ `{}` already installed, skipping", slug);
