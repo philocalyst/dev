@@ -37,7 +37,7 @@ pub enum DevDocsError {
     InvalidSlug(String),
 }
 
-enum OutputType {
+pub enum Formats {
     Markdown,
     Html,
 }
@@ -172,8 +172,8 @@ impl DevDocsManager {
     async fn split_into(
         &self,
         slug: &str,
-        output_type: &OutputType,
-        total_content: HashMap<String, String>,
+        output_type: &Formats,
+        total_content: &HashMap<String, String>,
     ) -> Result<()> {
         total_content.into_iter().for_each(|(name, contents)| {
             let key = self.data_dir.join(slug).join(name);
@@ -182,7 +182,7 @@ impl DevDocsManager {
 
             use html2md;
             match output_type {
-                OutputType::Markdown => {
+                Formats::Markdown => {
                     let contents = ensure_extensions(&contents, "md");
 
                     let contents = html2md::parse_html(&contents);
@@ -190,7 +190,7 @@ impl DevDocsManager {
                     std::fs::write(add_ext(key, "md"), contents).unwrap();
                 }
 
-                OutputType::Html => {
+                Formats::Html => {
                     std::fs::write(add_ext(key, "html"), ensure_extensions(&contents, "html"))
                         .unwrap();
                 }
