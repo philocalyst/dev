@@ -40,13 +40,16 @@ pub enum DevDocsError {
 use bitflags::bitflags;
 
 bitflags! {
+    #[derive(Serialize, Clone, PartialEq, Copy, Debug, Deserialize)]
+    #[repr(transparent)]
+    #[serde(transparent)]
     pub struct Formats: u8 {
         const MARKDOWN = 0b01;
         const HTML     = 0b10;
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Doc {
     pub name: String,
     pub slug: String,
@@ -102,6 +105,7 @@ pub struct SearchResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CachedDoc {
     doc: Doc,
+    formats: Option<Formats>,
     index: DocIndex,
     cached_at: u64,
 }
