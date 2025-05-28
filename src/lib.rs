@@ -311,6 +311,15 @@ impl DevDocsManager {
         Ok(cache.contains_key(slug))
     }
 
+    pub async fn is_format_installed(&self, slug: &str, formats: Option<Formats>) -> Result<bool> {
+        let cache = self.cache.read().await;
+
+        let found = cache
+            .iter()
+            .any(|(key, cached)| key.contains(slug) && cached.formats == formats);
+        Ok(found)
+    }
+
     /// Get information about an installed documentation
     pub async fn get_doc_info(&self, slug: &str) -> Result<Doc> {
         let cache = self.cache.read().await;
