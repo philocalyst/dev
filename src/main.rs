@@ -85,23 +85,19 @@ async fn main() -> Result<()> {
     match cli.cmd {
         Commands::Add { html, md, slugs } => {
             for slug in slugs {
-                if !mgr.is_doc_installed(&slug).await? {
-                    // install the binary cache + markdown
-                    println!("✅ installed `{}` (markdown)", slug);
+                // install the binary cache + markdown
+                println!("✅ installed `{}` (markdown)", slug);
 
-                    if !html && !md {
-                        mgr.add_doc(&slug, None).await?;
-                    }
+                if !html && !md {
+                    mgr.add_doc(&slug, None).await?;
+                }
 
-                    if html {
-                        mgr.add_doc(&slug, Some(&Formats::HTML)).await?;
-                    }
+                if html {
+                    mgr.add_doc(&slug, Some(Formats::HTML)).await?;
+                }
 
-                    if md {
-                        mgr.add_doc(&slug, Some(&Formats::MARKDOWN)).await?;
-                    }
-                } else {
-                    println!("⚠ `{}` already installed, skipping", slug);
+                if md {
+                    mgr.add_doc(&slug, Some(Formats::MARKDOWN)).await?;
                 }
             }
         }
