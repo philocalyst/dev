@@ -23,10 +23,10 @@ struct Cli {
 enum Commands {
     /// Add one or more docs (downloads & caches them)
     Add {
-        /// Only generate HTML files
+        /// Generate HTML files
         #[clap(long)]
         html: bool,
-        /// Only generate Markdown files
+        /// Generate Markdown files
         #[clap(long)]
         md: bool,
         /// Slugs of docs to install
@@ -84,19 +84,21 @@ async fn main() -> Result<()> {
 
     match cli.cmd {
         Commands::Add { html, md, slugs } => {
-            // default to both if neither flag is set
-            let do_html = html || (!html && !md);
-            let do_md = md || (!html && !md);
-
             for slug in slugs {
                 if !mgr.is_doc_installed(&slug).await? {
                     // install the binary cache + markdown
                     println!("✅ installed `{}` (markdown)", slug);
 
-                    if do_html {
-                        mgr.add_doc(&slug, Some(&Formats::Html)).await?;
-                    } else {
-                        mgr.add_doc(&slug, Some(&Formats::Markdown)).await?;
+                    if !html && !md {
+                        mgr.add_doc(&slug, None).await?;
+                    }
+
+                    if html {
+                        mgr.add_doc(&slug, Some(&Formats::HTML)).await?;
+                    }
+
+                    if md {
+                        mgr.add_doc(&slug, Some(&Formats::MARKDOWN)).await?;
                     }
                 } else {
                     println!("⚠ `{}` already installed, skipping", slug);
