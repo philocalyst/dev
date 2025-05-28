@@ -206,8 +206,8 @@ impl DevDocsManager {
     }
 
     /// Add a new documentation
-    pub async fn add_doc(&self, slug: &str, format: Option<&Formats>) -> Result<()> {
-        if self.is_doc_installed(slug).await? {
+    pub async fn add_doc(&self, slug: &str, format: Option<Formats>) -> Result<()> {
+        if self.is_format_installed(slug, format).await? {
             warn!("Doc is already installed, skipping.");
             return Ok(());
         }
@@ -231,6 +231,7 @@ impl DevDocsManager {
 
         let cached_doc = CachedDoc {
             doc,
+            formats: format,
             index,
             cached_at: current_timestamp(),
         };
@@ -270,7 +271,7 @@ impl DevDocsManager {
     }
 
     /// Download all available documentation
-    pub async fn download_all(&self, format: &Formats) -> Result<()> {
+    pub async fn download_all(&self, format: Formats) -> Result<()> {
         let available_docs = self.get_available_docs().await?;
         let installed_docs = self.list_installed_docs().await?;
 
