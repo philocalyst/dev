@@ -72,6 +72,7 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    env_logger::init();
     let cli = Cli::parse();
 
     // reconstruct the same data directory the library uses
