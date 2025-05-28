@@ -353,6 +353,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitcode",
+ "bitflags 2.9.1",
  "clap",
  "dirs",
  "env_logger",
