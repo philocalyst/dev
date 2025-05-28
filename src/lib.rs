@@ -37,9 +37,13 @@ pub enum DevDocsError {
     InvalidSlug(String),
 }
 
-pub enum Formats {
-    Markdown,
-    Html,
+use bitflags::bitflags;
+
+bitflags! {
+    pub struct Formats: u8 {
+        const MARKDOWN = 0b01;
+        const HTML     = 0b10;
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -181,19 +185,16 @@ impl DevDocsManager {
             std::fs::create_dir_all(parent_dir).unwrap();
 
             use html2md;
-            match output_type {
-                Formats::Markdown => {
-                    let contents = ensure_extensions(&contents, "md");
+            if output_type.contains(Formats::MARKDOWN) {
+                let contents = ensure_extensions(&contents, "md");
 
-                    let contents = html2md::parse_html(&contents);
+                let contents = html2md::parse_html(&contents);
 
-                    std::fs::write(add_ext(key, "md"), contents).unwrap();
-                }
+                std::fs::write(add_ext(key.clone(), "md"), contents).unwrap();
+            }
 
-                Formats::Html => {
-                    std::fs::write(add_ext(key, "html"), ensure_extensions(&contents, "html"))
-                        .unwrap();
-                }
+            if output_type.contains(Formats::HTML) {
+                std::fs::write(add_ext(key, "html"), ensure_extensions(&contents, "html")).unwrap();
             }
         });
 
@@ -221,11 +222,7 @@ impl DevDocsManager {
 
         let content = self.download_doc_content(slug).await?;
         if let Some(format) = format {
-            self.split_into(&doc.slug, format, &content).await?;
-        } else {
-            self.split_into(&doc.slug, &Formats::Markdown, &content)
-                .await?;
-            self.split_into(&doc.slug, &Formats::Html, &content).await?;
+            self.split_into(&doc.slug, &format, &content).await?;
         }
 
         let cached_doc = CachedDoc {
